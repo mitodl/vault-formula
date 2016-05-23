@@ -1,0 +1,9 @@
+name: hashicorp-vault
+os: RedHat, CentOS, Ubuntu, Debian
+os_family: RedHat, Debian
+version: 201605
+release: 1
+summary: SaltStack formula to install and configure Vault from Hashicorp for managing secrets in your infrastructure
+description: SaltStack formula to install and configure Vault from Hashicorp for managing secrets in your infrastructure
+top_level_dir: hashicorp-vault
+recommended: 
