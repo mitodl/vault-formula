@@ -10,7 +10,7 @@ sudo mkdir -p /srv/salt
 sudo mkdir -p /srv/pillar
 sudo mkdir -p /srv/formulas
 sudo cp $SRCDIR/pillar.example /srv/pillar/pillar.sls
-sudo cp -r $SRCDIR/hashicorp-vault /srv/salt
+sudo cp -r $SRCDIR/vault /srv/salt
 echo "\
 base:
   '*':

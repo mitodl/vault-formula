@@ -1,6 +1,6 @@
-hashicorp-vault:
+vault:
   lookup:
-    pkg: myhashicorp-vault
-    conf_file: /usr/local/etc/hashicorp-vault/hashicorp-vault.conf
+    pkg: myvault
+    conf_file: /usr/local/etc/vault/vault.conf
   config:
     key: othervalue

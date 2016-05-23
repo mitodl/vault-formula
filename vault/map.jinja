@@ -1,0 +1,14 @@
+{% set vault = salt['grains.filter_by']({
+    'default': {
+        'pkg': 'vault',
+        'service': 'vault',
+        'conf_file': '/etc/vault/vault.conf',
+        'config': {
+            'key': 'value',
+        },
+    },
+    'Debian': {
+    },
+    'RedHat': {
+    },
+}, grain='os_family', merge=salt['pillar.get']('vault:lookup'), base='default') %}

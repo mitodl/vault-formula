@@ -1,5 +1,5 @@
 ===============
-hashicorp-vault
+vault
 ===============
 
 SaltStack formula to install and configure Vault from Hashicorp for managing secrets in your infrastructure
@@ -16,12 +16,12 @@ Available states
 .. contents::
     :local:
 
-``hashicorp-vault``
+``vault``
 -------------------
 
 TODO - add description of this state
 
-``hashicorp-vault.conf``
+``vault.conf``
 ------------------------
 
 TODO - add description of this state

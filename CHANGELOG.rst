@@ -1,4 +1,4 @@
-hashicorp-vault formula
+vault formula
 =======================
 
 201605 (2016-05-25)
