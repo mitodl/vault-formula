@@ -1,14 +1,37 @@
-{% set vault = salt['grains.filter_by']({
+{% set vault = salt.grains.filter_by({
     'default': {
-        'pkg': 'vault',
         'service': 'vault',
-        'conf_file': '/etc/vault/vault.conf',
+        'ssl_directory': '/etc/salt/ssl',
+        'ssl': {},
         'config': {
-            'key': 'value',
+            'backend': {
+                "file": {
+                    "path": "/var/vault/data"
+                }
+            },
+            'listener': {
+                'tcp': {
+                    'address': 'localhost:8200',
+                    'tls_cert_file': '/etc/salt/ssl/certs/vault.example.com.crt',
+                    'tls_key_file': '/etc/salt/ssl/certs/vault.example.com.key'
+                }
+            },
         },
+        'version': '0.5.2'
     },
     'Debian': {
     },
     'RedHat': {
     },
-}, grain='os_family', merge=salt['pillar.get']('vault:lookup'), base='default') %}
+}, grain='os_family', merge=salt.pillar.get('vault:overrides'), base='default') %}
+
+{% set vault_service = salt.grains.filter_by({
+    'systemd': {
+        'init_file': '/etc/systemd/system/vault.service',
+        'init_source': 'salt://vault/files/vault.service'
+    },
+    'upstart': {
+        'init_file': '/etc/init/vault',
+        'init_source': 'salt://vault/files/vault.upstart'
+    }
+}, grain='init', merge=salt.pillar.get('vault:service')) %}

@@ -1,0 +1,15 @@
+[Unit]
+Description=Hashicorp Vault secret management service
+Documentation=http://vaultproject.io
+
+[Service]
+Type=forking
+ExecStart=/usr/local/bin/vaultserver start
+ExecStop=/usr/local/bin/vaultserver stop
+ExecReload=/usr/local/bin/vaultserver reload
+Restart=always
+PIDFile=/var/run/vault.pid
+TimeoutStartSec=1
+
+[Install]
+WantedBy=multi-user.target

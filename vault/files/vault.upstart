@@ -1,0 +1,12 @@
+description "Hashicorp Vault secrets management server"
+author "Tobias Macey"
+start on filesystem or runlevel [2345]
+stop on shutdown
+
+script
+  /usr/local/bin/vaultserver start
+end script
+
+pre-stop script
+  /usr/local/bin/vaultserver stop
+end script
