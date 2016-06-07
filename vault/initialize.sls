@@ -1,0 +1,14 @@
+{% from "vault/map.jinja" import vault with context %}
+
+install_hvac_library:
+  pip.installed:
+    - name: hvac
+    - reload_modules: True
+
+initialize_vault_server:
+  vaultinit.initialize:
+    - secret_shares: {{ vault.secret_shares }}
+    - secret_threshold: {{ vault.secret_threshold }}
+    - unseal: {{ vault.unseal }}
+    - pgp_keys: {{ vault.pgp_keys }}
+    - keybase_users: {{ vault.keybase_users }}

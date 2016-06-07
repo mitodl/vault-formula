@@ -89,6 +89,3 @@ setup_vault_ssl_cert:
     - require_in:
       - service: vault_service_running
 {% endif %}
-
-# TODO: initialize vault
-# TODO: generate TLS certificate
