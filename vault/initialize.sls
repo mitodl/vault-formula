@@ -2,11 +2,11 @@
 
 install_hvac_library:
   pip.installed:
-    - name: hvac
+    - name: git+https://github.com/mitodl/hvac
     - reload_modules: True
 
 initialize_vault_server:
-  vaultinit.initialize:
+  vault.initialized:
     - secret_shares: {{ vault.secret_shares }}
     - secret_threshold: {{ vault.secret_threshold }}
     - unseal: {{ vault.unseal }}

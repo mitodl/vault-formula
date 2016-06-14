@@ -1,6 +1,12 @@
 vault:
-  lookup:
-    pkg: myvault
-    conf_file: /usr/local/etc/vault/vault.conf
+  overrides:
+    keybase_users:
+      - renaissancedev
+      - pdpinch
+      - bdero
+    secret_shares: 3
+    secret_threshold: 2
   config:
     key: othervalue
+
+vault.verify: False
