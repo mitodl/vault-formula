@@ -1,5 +1,8 @@
 {% from "vault/map.jinja" import vault with context %}
 
+include:
+  - .install_module_dependencies
+
 install_hvac_library:
   pip.installed:
     - name: git+https://github.com/mitodl/hvac

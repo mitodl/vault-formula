@@ -1,5 +1,11 @@
 {% set vault = salt.grains.filter_by({
     'default': {
+        'architecture_dict': {
+            'x86_64': 'amd64',
+            'amd64': 'amd64',
+            'i386': '386',
+            'i686': '386'
+        },
         'service': 'vault',
         'ssl_directory': '/etc/salt/ssl',
         'ssl': {},
@@ -17,7 +23,7 @@
                 }
             },
         },
-        'version': '0.5.2',
+        'version': '0.6.0',
         'secret_shares': 5,
         'secret_threshold': 3,
         'unseal': True,
@@ -25,8 +31,16 @@
         'keybase_users': []
     },
     'Debian': {
+        'module_dependencies': {
+            'pkgs': ['libffi-dev', 'python-dev', 'gcc', 'libssl-dev', 'python'],
+            'pip_deps': ['pyopenssl', 'hvac', 'testinfra']
+        }
     },
     'RedHat': {
+        'module_dependencies': {
+            'pkgs': ['libffi-devel', 'openssl-devel', 'gcc', 'python-devel'],
+            'pip_deps': ['pyopenssl', 'hvac', 'testinfra']
+        }
     },
 }, grain='os_family', merge=salt.pillar.get('vault:overrides'), base='default') %}
 
@@ -36,7 +50,7 @@
         'init_source': 'salt://vault/files/vault.service'
     },
     'upstart': {
-        'init_file': '/etc/init/vault',
+        'init_file': '/etc/init/vault.conf',
         'init_source': 'salt://vault/files/vault.upstart'
     }
 }, grain='init', merge=salt.pillar.get('vault:service')) %}

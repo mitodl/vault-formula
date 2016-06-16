@@ -3,11 +3,12 @@
 include:
   - .configure
   - .service
+  - .install_module_dependencies
 
 install_vault_binary:
   archive.extracted:
     - name: /usr/local/bin/
-    - source: https://releases.hashicorp.com/vault/{{ vault.version }}/vault_{{ vault.version }}_linux_{{ grains['osarch'] }}.zip
+    - source: https://releases.hashicorp.com/vault/{{ vault.version }}/vault_{{ vault.version }}_linux_{{ vault.architecture_dict[grains['osarch']] }}.zip
     - source_hash: https://releases.hashicorp.com/vault/{{ vault.version }}/vault_{{ vault.version }}_SHA256SUMS
     - archive_format: zip
     - if_missing: /usr/local/bin/vault
@@ -76,6 +77,14 @@ setup_vault_ssl_key:
     - require_in:
       - service: vault_service_running
 {% else %}
+install_tls_module_dependency:
+  pip.installed:
+    - name: pyopenssl
+    - reload_modules: True
+    - require:
+        - pkg: install_package_dependencies
+        - cmd: install_pip_executable
+
 setup_vault_ssl_cert:
   module.run:
     - name: tls.create_self_signed_cert
@@ -86,6 +95,8 @@ setup_vault_ssl_cert:
        {'CN': 'vault.example.com'}).items() -%}
     - {{ arg }}: {{ val }}
     {% endfor -%}
+    - require:
+        - pip: install_tls_module_dependency
     - require_in:
       - service: vault_service_running
 {% endif %}
