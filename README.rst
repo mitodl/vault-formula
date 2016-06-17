@@ -19,12 +19,22 @@ Available states
 ``vault``
 -------------------
 
-TODO - add description of this state
+Install and start the Vault server
 
-``vault.conf``
+``vault.configure``
 ------------------------
 
-TODO - add description of this state
+Create a configuration file for the installed Vault server and restart the Vault service
+
+``vault.initialize``
+--------------------
+
+Initialize and optionally unseal the installed Vault server. If PGP public keys or Keybase usernames are provided then the sealing keys will be regenerated after unsealing and then backed up to the Vault server.
+
+``vault.tests``
+----------------
+
+Execute the tests for the associated state files.
 
 
 Template
