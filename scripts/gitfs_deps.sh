@@ -4,10 +4,10 @@ if [ $(which apt-get) ];
 then
     sudo apt-get update
     PKG_MANAGER="apt-get"
-    PKGS="python python-dev git"
+    PKGS="python python-dev git curl"
 else
     PKG_MANAGER="yum"
-    PKGS="python python-devel git"
+    PKGS="python python-devel git curl"
 fi
 
 sudo $PKG_MANAGER -y install $PKGS
