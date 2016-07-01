@@ -6,3 +6,7 @@ vault:
       - bdero
     secret_shares: 3
     secret_threshold: 2
+    config:
+      backend:
+        file:
+          path: /var/vault/data
