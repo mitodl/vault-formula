@@ -12,6 +12,7 @@ install_vault_binary:
     - source_hash: https://releases.hashicorp.com/vault/{{ vault.version }}/vault_{{ vault.version }}_SHA256SUMS
     - archive_format: zip
     - if_missing: /usr/local/bin/vault
+    - enforce_toplevel: False
   file.managed:
     - name: /usr/local/bin/vault
     - mode: '0755'

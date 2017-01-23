@@ -5,7 +5,7 @@ include:
 
 install_hvac_library:
   pip.installed:
-    - name: git+https://github.com/mitodl/hvac
+    - name: hvac
     - reload_modules: True
 
 initialize_vault_server:
