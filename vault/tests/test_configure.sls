@@ -1,6 +1,3 @@
-include:
-  - .init
-
 test_config_file_present:
   testinfra.file:
     - name: /etc/vault/vault.json

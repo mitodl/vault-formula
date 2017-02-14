@@ -1,8 +1,5 @@
 {% from "vault/map.jinja" import vault, vault_service with context %}
 
-include:
-  - .init
-
 test_vault_is_installed:
   testinfra.file:
     - name: /usr/local/bin/vault

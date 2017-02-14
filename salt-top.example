@@ -1,8 +1,4 @@
 base:
   '*':
     - vault
-    - vault.configure
-    - vault.initialize
-    - vault.tests.test_install
-    - vault.tests.test_configure
-    - vault.tests.test_initialize
+    - vault.tests
