@@ -1,7 +1,10 @@
 include:
   - vault.install_module_dependencies
+  - .test_install
+  - .test_configure
 
-install_testinfra_library:
+install_testinfra_library_for_vault_testing:
   pip.installed:
-    - name: git+https://github.com/mitodl/testinfra
+    - name: testinfra
     - reload_modules: True
+    - order: 1
