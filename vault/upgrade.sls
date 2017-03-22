@@ -10,7 +10,7 @@ rename_old_vault_binary_for_backup:
         - archive: install_vault_binary
 
 extend:
-  start_consul_service:
+  vault_service_running:
     service:
       - reload: False
       - watch:
