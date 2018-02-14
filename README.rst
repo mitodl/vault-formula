@@ -6,12 +6,7 @@ SaltStack formula to install and configure Vault from Hashicorp for managing sec
 
 .. note::
 
-   This formula requires the `Vault execution and state modules <https://github.com/mitodl/salt-extensions>`_ currently maintained by the MIT Office of Digital Learning.
-
-.. note::
-
-    See the full `Salt Formulas installation and usage instructions
-    <http://docs.saltstack.com/en/latest/topics/development/conventions/formulas.html>`_.
+   This formula includes custom execution and state modules that must be synced to the target minion/master prior to executing the formula. These modules additionally require the `hvac` library to be installed for the extensions to be made available.
 
 
 Available states
