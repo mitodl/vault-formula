@@ -14,6 +14,8 @@ import logging
 import os
 import requests
 import json
+import time
+from functools import wraps
 
 import salt.crypt
 import salt.exceptions
@@ -1702,3 +1704,97 @@ class VaultClient(object):
             raise VaultDown(message, errors=errors)
         else:
             raise UnexpectedError(message)
+
+
+def cache_client(client_builder):
+    _client = []
+    @wraps(client_builder)
+    def get_client(*args, **kwargs):
+        if not _client:
+            _client.append(client_builder(*args, **kwargs))
+        return _client[0]
+    return get_client
+
+
+@cache_client
+def build_client(url='https://localhost:8200',
+                 token=None,
+                 cert=None,
+                 verify=True,
+                 timeout=30,
+                 proxies=None,
+                 allow_redirects=True,
+                 session=None):
+    client_kwargs = locals()
+    for k, v in client_kwargs.items():
+        if k.startswith('_'):
+            continue
+        arg_val = __salt__['config.get']('vault.{key}'.format(key=k), v)
+        log.debug('Setting {0} parameter for HVAC client to {1}.'
+                  .format(k, arg_val))
+        client_kwargs[k] = arg_val
+    return VaultClient(**client_kwargs)
+
+
+def bind_client(unbound_function):
+    @wraps(unbound_function)
+    def bound_function(*args, **kwargs):
+        filtered_kwargs = {k: v for k, v in kwargs.items()
+                           if not k.startswith('_')}
+        ignore_invalid = filtered_kwargs.pop('ignore_invalid', None)
+        client = build_client()
+        try:
+            return unbound_function(client, *args, **filtered_kwargs)
+        except InvalidRequest:
+            if ignore_invalid:
+                return None
+            else:
+                raise
+    return bound_function
+
+
+def get_keybase_pubkey(username):
+    """
+    Return the base64 encoded public PGP key for a keybase user.
+    """
+    # Retrieve the text of the public key stored in Keybase
+    user = requests.get('https://keybase.io/{username}/key.asc'.format(
+        username=username))
+    # Explicitly raise an exception if there is an HTTP error. No-op on success
+    user.raise_for_status()
+    # Process the key to only include the contents and not the wrapping
+    # contents (e.g. ----BEGIN PGP KEY---)
+    key_lines = user.text.strip('\n').split('\n')
+    key_lines = key_lines[key_lines.index(''):-2]
+    return ''.join(key_lines)
+
+
+def unseal(sealing_keys):
+    client = build_client()
+    client.unseal_multi(sealing_keys)
+
+
+def rekey(secret_shares, secret_threshold, sealing_keys, pgp_keys, root_token):
+    client = build_client(token=root_token)
+    rekey = client.start_rekey(secret_shares, secret_threshold, pgp_keys,
+                               backup=True)
+    client.rekey_multi(sealing_keys, nonce=rekey['nonce'])
+
+
+def wait_after_init(client, retries=5):
+    '''This function will allow for a configurable delay before attempting
+    to issue requests after an initialization. This is necessary because when
+    running on an HA backend there is a short period where the Vault instance
+    will be on standby while it acquires the lock.'''
+    ready = False
+    while retries > 0 and not ready:
+        try:
+            status = client.read('sys/health')
+            ready = (status.get('initialized') and not status.get('sealed')
+                     and not status.get('standby'))
+        except VaultError:
+            pass
+        if ready:
+            break
+        retries -= 1
+        time.sleep(1)
