@@ -7,6 +7,7 @@ from __future__ import absolute_import
 
 import logging
 from datetime import datetime, timedelta
+import salt.loader
 
 log = logging.getLogger(__name__)
 EXCLUDED_HVAC_FUNCTIONS = ['initialize']
@@ -20,6 +21,16 @@ except ImportError:
     DEPS_INSTALLED = False
 
 __all__ = ['initialize', 'is_initialized']
+
+__utils__ = {}
+
+
+def __init__(opts):
+    global __utils__
+    __utils__.update(salt.loader.utils(opts))
+
+    if DEPS_INSTALLED:
+        _register_functions()
 
 
 class InsufficientParameters(Exception):
@@ -152,15 +163,12 @@ def clean_expired_leases(prefix='', time_horizon=0):
 
 
 def _register_functions():
-    method_dict = {}
-    for method_name in dir(hvac.Client):
+    log.info('Utils object is: {0}'.format(__utils__))
+    for method_name in dir(__utils__['vault.VaultClient']):
         if not method_name.startswith('_'):
-            method = getattr(hvac.Client, method_name)
+            method = getattr(__utils__['vault.VaultClient'], method_name)
             if (not isinstance(method, property) and
-                  method_name not in EXCLUDED_HVAC_FUNCTIONS):
+                    method_name not in EXCLUDED_HVAC_FUNCTIONS):
                 if method_name == 'list':
                     method_name = 'list_values'
                 globals()[method_name] = __utils__['vault.bind_client'](method)
-
-if DEPS_INSTALLED:
-    _register_functions()

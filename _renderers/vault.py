@@ -9,21 +9,30 @@ __vault__:gen_if_missing[32]:path/to/key>attribute
 import logging
 from datetime import datetime, timedelta
 
+import salt.loader
+
 log = logging.getLogger(__name__)
 local_cache = {}
 cache_base_path = __opts__['vault.cache_base_path']
 renewal_threshold = {'days: 7'}
 
+__utils__ = {}
+
+
+def __init__(opts):
+    global __utils__
+    __utils__.update(salt.loader.utils(opts))
+
 
 def _read(path, *args):
-    vault_client = __utils__['vault.build_client']()
-    vault_data = local_cache.get(path, vault_client.read(cache_path))
-    return vault_client.read(path)
+    vault_client = __utils__['vaultmod.build_client']()
+    vault_data = local_cache.get(path, vault_client.read(path))
+    return vault_data
 
 
 def _cached_read(path, cache_prefix=None):
     cache_path = '/'.join((cache_base_path, cache_prefix, path))
-    vault_client = __utils__['vault.build_client']()
+    vault_client = __utils__['vaultmod.build_client']()
 
     try:
         vault_data = local_cache[path]
@@ -46,7 +55,7 @@ def _cached_read(path, cache_prefix=None):
 
 
 # def _gen_if_missing(path, *attrs):
-#     vault_client = __utils__['vault.build_client']()
+#     vault_client = __utils__['vaultmod.build_client']()
 #     try:
 #         local_cache[path]
         

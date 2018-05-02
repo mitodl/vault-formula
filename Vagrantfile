@@ -14,7 +14,7 @@ Vagrant.configure(2) do |config|
   # boxes at https://atlas.hashicorp.com/search.
 
   config.vm.define "debian" do |debian|
-    debian.vm.box = "debian/jessie64"
+    debian.vm.box = "debian/stretch64"
   end
 
   config.vm.define "centos" do |centos|
@@ -22,7 +22,7 @@ Vagrant.configure(2) do |config|
   end
 
   config.vm.define "ubuntu" do |ubuntu|
-    ubuntu.vm.box = "ubuntu/trusty64"
+    ubuntu.vm.box = "ubuntu/xenial64"
   end
 
   # Disable automatic box update checking. If you disable this, then
@@ -49,7 +49,7 @@ Vagrant.configure(2) do |config|
   # the path on the guest to mount the folder. And the optional third
   # argument is a set of non-required options.
   # config.vm.synced_folder "../data", "/vagrant_data"
-  config.vm.synced_folder "../salt-extensions/extensions", "/srv/salt", type: "rsync", rsync__exclude: ".git"
+  config.vm.synced_folder ".", "/srv/salt/", type: "rsync", rsync__exclude: ".git"
   config.vm.synced_folder ".", "/vagrant", type: "rsync", rsync__exclude: ".git"
 
   # Provider-specific configuration so you can fine-tune various
