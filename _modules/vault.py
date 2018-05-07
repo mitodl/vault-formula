@@ -7,13 +7,10 @@ from __future__ import absolute_import
 
 import logging
 from datetime import datetime, timedelta
-import salt.loader
 
 log = logging.getLogger(__name__)
-EXCLUDED_HVAC_FUNCTIONS = ['initialize']
 
 try:
-    import hvac
     import requests
     DEPS_INSTALLED = True
 except ImportError:
@@ -26,9 +23,6 @@ __utils__ = {}
 
 
 def __init__(opts):
-    global __utils__
-    __utils__.update(salt.loader.utils(opts))
-
     if DEPS_INSTALLED:
         _register_functions()
 
@@ -68,7 +62,7 @@ def initialize(secret_shares=5, secret_threshold=3, pgp_keys=None,
             __utils__['vault.wait_after_init'](client)
             log.debug('Unsealing Vault with generated sealing keys.')
             __utils__['vault.unseal'](sealing_keys)
-    except hvac.exceptions.VaultError as e:
+    except __utils__['vault.vault_error']() as e:
         log.exception(e)
         success = False
         sealing_keys = None
@@ -83,7 +77,7 @@ def initialize(secret_shares=5, secret_threshold=3, pgp_keys=None,
             encrypted_sealing_keys = client.get_backed_up_keys()['keys']
             if encrypted_sealing_keys:
                 sealing_keys = encrypted_sealing_keys
-    except hvac.exceptions.VaultError as e:
+    except __utils__['vault.vault_error']() as e:
         log.error('Vault was initialized but PGP encrypted keys were not able to'
                   ' be generated after unsealing.')
         log.debug('Failed to rekey and backup the sealing keys.')
@@ -104,7 +98,7 @@ def scan_leases(prefix='', time_horizon=0, send_events=True):
     client = __utils__['vault.build_client']()
     try:
         prefixes = client.list('sys/leases/lookup/{0}'.format(prefix))
-    except hvac.exceptions.VaultError as e:
+    except __utils__['vault.vault_error']() as e:
         log.exception('Failed to retrieve lease information for prefix %s',
                       prefix)
         return []
@@ -124,7 +118,7 @@ def scan_leases(prefix='', time_horizon=0, send_events=True):
                 lease_info = client.write(
                     'sys/leases/lookup',
                     lease_id='{0}/{1}'.format(prefix.strip('/'), node))
-            except hvac.exceptions.VaultError as e:
+            except __utils__['vault.vault_error']() as e:
                 log.exception('Failed to retrieve lease information for %s',
                               '{0}/{1}'.format(prefix.strip('/'), node))
                 continue
@@ -155,7 +149,7 @@ def clean_expired_leases(prefix='', time_horizon=0):
     for index, lease in enumerate(expired_leases):
         try:
             client.write('sys/leases/revoke', lease_id=lease['id'])
-        except hvac.exceptions.VaultError:
+        except __utils__['vault.vault_error']():
             log.exception('Failed to revoke lease %s', lease['id'])
             expired_leases.pop(index)
             continue
@@ -164,11 +158,10 @@ def clean_expired_leases(prefix='', time_horizon=0):
 
 def _register_functions():
     log.info('Utils object is: {0}'.format(__utils__))
-    for method_name in dir(__utils__['vault.VaultClient']):
+    for method_name in dir(__utils__['vault.vault_client']()):
         if not method_name.startswith('_'):
-            method = getattr(__utils__['vault.VaultClient'], method_name)
-            if (not isinstance(method, property) and
-                    method_name not in EXCLUDED_HVAC_FUNCTIONS):
+            method = getattr(__utils__['vault.vault_client'](), method_name)
+            if not isinstance(method, property):
                 if method_name == 'list':
                     method_name = 'list_values'
                 globals()[method_name] = __utils__['vault.bind_client'](method)
