@@ -9,11 +9,11 @@ __vault__:gen_if_missing[32]:path/to/key>attribute
 import logging
 from datetime import datetime, timedelta
 
+import six
 import salt.loader
 
 log = logging.getLogger(__name__)
 local_cache = {}
-cache_base_path = __opts__['vault.cache_base_path']
 renewal_threshold = {'days: 7'}
 
 __utils__ = {}
@@ -25,14 +25,18 @@ def __init__(opts):
 
 
 def _read(path, *args):
-    vault_client = __utils__['vaultmod.build_client']()
-    vault_data = local_cache.get(path, vault_client.read(path))
+    vault_client = __utils__['vault.build_client']()
+    try:
+        vault_data = local_cache[path]
+    except KeyError:
+        vault_data = local_cache[path] = vault_client.read(path)
     return vault_data
 
 
 def _cached_read(path, cache_prefix=None):
+    cache_base_path = __opts__.get('vault.cache_base_path', 'secret/cache')
     cache_path = '/'.join((cache_base_path, cache_prefix, path))
-    vault_client = __utils__['vaultmod.build_client']()
+    vault_client = __utils__['vault.build_client']()
 
     try:
         vault_data = local_cache[path]
@@ -54,17 +58,30 @@ def _cached_read(path, cache_prefix=None):
     return vault_data
 
 
-# def _gen_if_missing(path, *attrs):
-#     vault_client = __utils__['vaultmod.build_client']()
-#     try:
-#         local_cache[path]
-        
+def _gen_if_missing(path, string_length=42):
+    vault_client = __utils__['vault.build_client']()
+    try:
+        vault_data = local_cache[path]
+    except KeyError:
+        vault_data = local_cache[path] = vault_client.read(path)
+
+    if not vault_data:
+        new_value = __salt__['random.get_str'](string_length)
+        vault_client.write(path, value=new_value)
+        vault_data = local_cache[path] = vault_client.read(path)
+
+    return vault_data
 
 dispatch = {
     '': _read,
     'cache': _cached_read,
-    # 'gen_if_missing': _gen_if_missing
+    'gen_if_missing': _gen_if_missing
 }
+
+
+def leaf_filter(leaf_data):
+    return (isinstance(leaf_data, six.string_types)
+            and leaf_data.startswith('__vault__'))
 
 
 def render(data,
@@ -76,7 +93,7 @@ def render(data,
     # Traverse data structure to leaf nodes
     for leaf_node, location, container in __utils__[
             'data_structures.traverse_leaf_nodes'](
-                data, lambda x: x.startswith('__vault__')):
+                data, leaf_filter):
         # Parse leaf nodes
         instructions, path = leaf_node.split(':', 2)[1:]
         # Replace values in matching leaf nodes
