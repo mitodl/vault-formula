@@ -14,7 +14,7 @@ import salt.loader
 
 log = logging.getLogger(__name__)
 local_cache = {}
-renewal_threshold = {'days: 7'}
+renewal_threshold = {'days': 7}
 
 __utils__ = {}
 
@@ -24,7 +24,7 @@ def __init__(opts):
     __utils__.update(salt.loader.utils(opts))
 
 
-def _read(path, *args):
+def _read(path, *args, **kwargs):
     vault_client = __utils__['vault.build_client']()
     try:
         vault_data = local_cache[path]
@@ -33,32 +33,37 @@ def _read(path, *args):
     return vault_data
 
 
-def _cached_read(path, cache_prefix=None):
-    cache_base_path = __opts__.get('vault.cache_base_path', 'secret/cache')
+def _cached_read(path, cache_prefix='', **kwargs):
+    cache_base_path = 'secret/pillar_cache'  #__opts__.get('vault.cache_base_path',
+                                   # 'secret/pillar_cache')
     cache_path = '/'.join((cache_base_path, cache_prefix, path))
     vault_client = __utils__['vault.build_client']()
 
     try:
         vault_data = local_cache[path]
     except KeyError:
-        vault_data = local_cache[path] = vault_client.read(cache_path)
+        vault_data = local_cache[path] = vault_client.read(
+            cache_path)
 
     if vault_data:
-        lease_info = vault_client.write('sys/leases/lookup',
-                                        lease_id=vault_data.lease_id)
-        lease_valid = (datetime.strptime(
-            lease_info['data']['expire_time'].split('.')[0],
-            '%Y-%m-%dT%H:%M:%S') > (datetime.utcnow()
-                                    + timedelta(**renewal_threshold)))
+        vault_data = vault_data['data']['value']
+        lease_start = datetime.strptime(vault_data['created'],
+                                        '%Y-%m-%dT%H:%M:%S.%f')
+        lease_length = timedelta(seconds=vault_data['lease_duration'])
+        # lease_info = vault_client.write('sys/leases/lookup',
+        #                                 lease_id=vault_data['lease_id'])
+        lease_valid = ((lease_start + lease_length) > (datetime.utcnow()
+                                        + timedelta(**renewal_threshold)))
 
     if not vault_data or not lease_valid:
         vault_data = local_cache[path] = vault_client.read(path)
-        vault_client.write(cache_path, vault_data)
+        vault_data['created'] = datetime.utcnow().isoformat()
+        vault_client.write(cache_path, value=vault_data)
 
     return vault_data
 
 
-def _gen_if_missing(path, string_length=42):
+def _gen_if_missing(path, string_length=42, **kwargs):
     vault_client = __utils__['vault.build_client']()
     try:
         vault_data = local_cache[path]
@@ -71,6 +76,7 @@ def _gen_if_missing(path, string_length=42):
         vault_data = local_cache[path] = vault_client.read(path)
 
     return vault_data
+
 
 dispatch = {
     '': _read,
@@ -88,7 +94,7 @@ def render(data,
            saltenv='base',
            sls='',
            argline='',
-           cache_prefix=None,
+           cache_prefix='',
            **kwargs):
     # Traverse data structure to leaf nodes
     for leaf_node, location, container in __utils__[
@@ -98,7 +104,9 @@ def render(data,
         instructions, path = leaf_node.split(':', 2)[1:]
         # Replace values in matching leaf nodes
         parsed_path = path.split('>')
-        vault_data = dispatch[instructions](parsed_path[0])
+        vault_data = dispatch[instructions](parsed_path[0],
+                                            cache_prefix=cache_prefix,
+                                            **kwargs)
         container[location] = __utils__['data.traverse_dict'](
             vault_data, ':'.join(parsed_path[1:]))
     return data
