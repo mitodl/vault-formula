@@ -28,7 +28,6 @@ def traverse_leaf_nodes(dict_or_list, leaf_filter=lambda x: True):
     leaf_nodes = []
 
     def _is_leaf_node(element):
-        print("Is leaf node: {}".format(element))
         return not isinstance(element, (list, dict, set, tuple))
 
     def _process_sequence(sequence_object,

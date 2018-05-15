@@ -46,6 +46,7 @@ def _cached_read(path, cache_prefix='', **kwargs):
             cache_path)
 
     if vault_data:
+        log.debug('Loaded cached data for path %s', path)
         vault_data = vault_data['data']['value']
         lease_start = datetime.strptime(vault_data['created'],
                                         '%Y-%m-%dT%H:%M:%S.%f')
