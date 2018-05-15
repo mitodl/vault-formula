@@ -57,9 +57,10 @@ def _cached_read(path, cache_prefix='', **kwargs):
                                         + timedelta(**renewal_threshold)))
 
     if not vault_data or not lease_valid:
-        vault_data = local_cache[path] = vault_client.read(path)
+        vault_data = vault_client.read(path)
         vault_data['created'] = datetime.utcnow().isoformat()
         vault_client.write(cache_path, value=vault_data)
+        vault_data = local_cache[path] = vault_client.read(cache_path)
 
     return vault_data
 
