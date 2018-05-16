@@ -17,6 +17,7 @@ import json
 import time
 from functools import wraps
 
+import six
 import salt.crypt
 import salt.exceptions
 import salt.utils.versions
@@ -303,10 +304,15 @@ class VaultClient(object):
         except InvalidPath:
             return None
 
-    def write(self, path, wrap_ttl=None, **kwargs):
+    def write(self, path, translate_newlines=False, wrap_ttl=None, **kwargs):
         """
         PUT /<path>
         """
+        if translate_newlines:
+            for k, v in kwargs.items():
+                if isinstance(v, six.string_types):
+                    kwargs[k] = v.replace(r'\n', '\n')
+
         response = self._put(
             '/v1/{0}'.format(path), json=kwargs, wrap_ttl=wrap_ttl)
 
