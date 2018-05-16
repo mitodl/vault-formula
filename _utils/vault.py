@@ -481,6 +481,15 @@ class VaultClient(object):
         """
         return self._get('/v1/sys/leader').json()
 
+    def get_lease(self, lease_id):
+        try:
+            lease = self.write('sys/leases/lookup', lease_id=lease_id)
+        except InvalidRequest:
+            log.exception('The specified lease is not valid')
+            lease = None
+
+        return lease
+
     def renew_secret(self, lease_id, increment=None):
         """
         PUT /sys/leases/renew
