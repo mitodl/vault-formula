@@ -156,6 +156,44 @@ def clean_expired_leases(prefix='', time_horizon=0):
     return expired_leases
 
 
+def list_cached_leases(prefix=None, cache_filter=''):
+    client = __utils__['vault.build_client']()
+    if not prefix:
+       prefix = __opts__.get('vault.cache_base_path',
+                             'secret/pillar_cache')
+
+    caches = client.list(
+        prefix
+    ).get('data', {}).get('keys', [])
+    cache_paths = []
+    for node in caches:
+        if node.endswith('/'):
+            log.debug('Recursing into path %s for prefix %s', node, prefix)
+            cache_paths.extend(list_cached_leases(prefix='{0}/{1}'.format(
+                prefix.strip('/'), node), cache_filter=cache_filter))
+        else:
+            cache_paths.append('{0}/{1}'.format(prefix.strip('/'), node))
+
+    cache_paths = [path for path in cache_paths if cache_filter in path]
+    return cache_paths
+
+
+def purge_cache_data(cache_filter):
+    """Scan cached leases and delete any that match the given prefix
+
+    :param prefix: The prefix path of cached leases that you want to purge
+    :returns: List of lease ids that were deleted
+    :rtype: list
+
+    """
+    client = __utils__['vault.build_client']()
+    cached_leases = list_cached_leases(cache_filter=prefix)
+    for path in cached_leases:
+        client.delete(path)
+
+    return cached_leases
+
+
 def _register_functions():
     log.info('Utils object is: {0}'.format(__utils__))
     for method_name in dir(__utils__['vault.vault_client']()):

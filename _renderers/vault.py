@@ -34,8 +34,8 @@ def _read(path, *args, **kwargs):
 
 
 def _cached_read(path, cache_prefix='', **kwargs):
-    cache_base_path = 'secret/pillar_cache'  #__opts__.get('vault.cache_base_path',
-                                   # 'secret/pillar_cache')
+    cache_base_path = __opts__.get('vault.cache_base_path',
+                                   'secret/pillar_cache')
     cache_path = '/'.join((cache_base_path, cache_prefix, path))
     vault_client = __utils__['vault.build_client']()
 
@@ -48,13 +48,14 @@ def _cached_read(path, cache_prefix='', **kwargs):
     if vault_data:
         log.debug('Loaded cached data for path %s', path)
         vault_data = vault_data['data']['value']
-        lease_start = datetime.strptime(vault_data['created'],
-                                        '%Y-%m-%dT%H:%M:%S.%f')
-        lease_length = timedelta(seconds=vault_data['lease_duration'])
-        # lease_info = vault_client.write('sys/leases/lookup',
-        #                                 lease_id=vault_data['lease_id'])
-        lease_valid = ((lease_start + lease_length) > (datetime.utcnow()
-                                        + timedelta(**renewal_threshold)))
+        lease = vault_client.get_lease(vault_data['lease_id'])
+
+        if (lease and timedelta(seconds=lease['data']['ttl']) >
+                timedelta(**renewal_threshold)):
+            lease_valid = True
+        else:
+            lease_valid = False
+            vault_client.delete(cache_path)
 
     if not vault_data or not lease_valid:
         vault_data = vault_client.read(path)
