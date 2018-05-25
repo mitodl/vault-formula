@@ -14,7 +14,6 @@ import salt.loader
 
 log = logging.getLogger(__name__)
 local_cache = {}
-renewal_threshold = {'days': 7}
 
 __utils__ = {}
 
@@ -33,39 +32,6 @@ def _read(path, *args, **kwargs):
     return vault_data
 
 
-def _cached_read(path, cache_prefix='', **kwargs):
-    cache_base_path = __opts__.get('vault.cache_base_path',
-                                   'secret/pillar_cache')
-    cache_path = '/'.join((cache_base_path, cache_prefix, path))
-    vault_client = __utils__['vault.build_client']()
-
-    try:
-        vault_data = local_cache[path]
-    except KeyError:
-        vault_data = local_cache[path] = vault_client.read(
-            cache_path)
-
-    if vault_data:
-        log.debug('Loaded cached data for path %s', path)
-        vault_data = vault_data['data']['value']
-        lease = vault_client.get_lease(vault_data['lease_id'])
-
-        if (lease and timedelta(seconds=lease['data']['ttl']) >
-                timedelta(**renewal_threshold)):
-            lease_valid = True
-        else:
-            lease_valid = False
-            vault_client.delete(cache_path)
-
-    if not vault_data or not lease_valid:
-        vault_data = vault_client.read(path)
-        vault_data['created'] = datetime.utcnow().isoformat()
-        vault_client.write(cache_path, value=vault_data)
-        vault_data = local_cache[path] = vault_client.read(cache_path)
-
-    return vault_data
-
-
 def _gen_if_missing(path, string_length=42, **kwargs):
     vault_client = __utils__['vault.build_client']()
     try:
@@ -81,11 +47,13 @@ def _gen_if_missing(path, string_length=42, **kwargs):
     return vault_data
 
 
-dispatch = {
-    '': _read,
-    'cache': _cached_read,
-    'gen_if_missing': _gen_if_missing
-}
+def dispatch(func_name):
+    func_dict = {
+        '': _read,
+        'cache': __salt__['vault.cached_read'],
+        'gen_if_missing': _gen_if_missing
+        }
+    return func_dict[func_name]
 
 
 def leaf_filter(leaf_data):
@@ -107,7 +75,7 @@ def render(data,
         instructions, path = leaf_node.split(':', 2)[1:]
         # Replace values in matching leaf nodes
         parsed_path = path.split('>')
-        vault_data = dispatch[instructions](parsed_path[0],
+        vault_data = dispatch(instructions)(parsed_path[0],
                                             cache_prefix=cache_prefix,
                                             **kwargs)
         container[location] = __utils__['data.traverse_dict'](

@@ -19,8 +19,6 @@ except ImportError:
 
 __all__ = ['initialize', 'is_initialized']
 
-__utils__ = {}
-
 
 def __init__(opts):
     if DEPS_INSTALLED:
@@ -154,6 +152,37 @@ def clean_expired_leases(prefix='', time_horizon=0):
             expired_leases.pop(index)
             continue
     return expired_leases
+
+
+def cached_read(path, cache_prefix='', **kwargs):
+    cache_base_path = __opts__.get('vault.cache_base_path',
+                                   'secret/pillar_cache')
+    cache_path = '/'.join((cache_base_path, cache_prefix, path))
+    renewal_threshold = __opts__.get('vault.lease_renewal_threshold',
+                                     {'days': 7})
+    vault_client = __utils__['vault.build_client']()
+
+    vault_data = vault_client.read(cache_path)
+
+    if vault_data:
+        log.debug('Loaded cached data for path %s', path)
+        vault_data = vault_data['data']['value']
+        lease = vault_client.get_lease(vault_data['lease_id'])
+
+        if (lease and timedelta(seconds=lease['data']['ttl']) >
+                timedelta(**renewal_threshold)):
+            lease_valid = True
+        else:
+            lease_valid = False
+            vault_client.delete(cache_path)
+
+    if not vault_data or not lease_valid:
+        vault_data = vault_client.read(path)
+        vault_data['created'] = datetime.utcnow().isoformat()
+        vault_client.write(cache_path, value=vault_data)
+        vault_data = vault_client.read(cache_path)
+
+    return vault_data
 
 
 def list_cached_leases(prefix=None, cache_filter=''):
