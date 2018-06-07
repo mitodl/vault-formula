@@ -89,6 +89,7 @@ def scan_leases(prefix='', time_horizon=0, send_events=True):
 
     :param prefix: The prefix path of leases that you want to scan
     :param time_horizon: How far in advance you want to be alerted for expiring leases (seconds)
+    :param send_events: Boolean to specify whether to fire events for matched leases
     :returns: List of lease info for leases expiring soon
     :rtype: list
 
@@ -177,10 +178,17 @@ def cached_read(path, cache_prefix='', **kwargs):
             vault_client.delete(cache_path)
 
     if not vault_data or not lease_valid:
+        __salt__['event.send'](
+            'vault/cache/miss/{0}'.format(cache_path),
+            data={
+                'message': 'The cached lease at {0} is either invalid or '
+                'expired. It will be regenerated and cached with new data.'
+                .format(cache_path)
+            })
         vault_data = vault_client.read(path)
         vault_data['created'] = datetime.utcnow().isoformat()
         vault_client.write(cache_path, value=vault_data)
-        vault_data = vault_client.read(cache_path)
+        vault_data = vault_client.read(cache_path)['data']['value']
 
     return vault_data
 
