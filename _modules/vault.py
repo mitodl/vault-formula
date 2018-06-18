@@ -19,6 +19,8 @@ except ImportError:
 
 __all__ = ['initialize', 'is_initialized']
 
+SEVEN_DAYS = (7 * 24 * 60 * 60)
+
 
 def __init__(opts):
     if DEPS_INSTALLED:
@@ -84,7 +86,7 @@ def initialize(secret_shares=5, secret_threshold=3, pgp_keys=None,
     return success, sealing_keys, root_token
 
 
-def scan_leases(prefix='', time_horizon=0, send_events=True):
+def scan_leases(prefix='', time_horizon=SEVEN_DAYS, send_events=True):
     """Scan all leases and generate an event for any that are near expiration
 
     :param prefix: The prefix path of leases that you want to scan
