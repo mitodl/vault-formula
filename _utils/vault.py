@@ -910,7 +910,7 @@ class VaultClient(object):
             params['role'] = role
 
         return self.auth(
-            '/v1/auth/aws-ec2/login', json=params, use_token=use_token).json()
+            '/v1/auth/aws-ec2/login', json=params, use_token=use_token)
 
     def create_userpass(self,
                         username,
