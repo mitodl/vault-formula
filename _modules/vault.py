@@ -195,7 +195,7 @@ def cached_read(path, cache_prefix='', **kwargs):
     return vault_data
 
 
-def list_cached_leases(prefix=None, cache_filter=''):
+def list_cache_paths(prefix=None, cache_filter=''):
     client = __utils__['vault.build_client']()
     if not prefix:
        prefix = __opts__.get('vault.cache_base_path',
@@ -208,7 +208,7 @@ def list_cached_leases(prefix=None, cache_filter=''):
     for node in caches:
         if node.endswith('/'):
             log.debug('Recursing into path %s for prefix %s', node, prefix)
-            cache_paths.extend(list_cached_leases(prefix='{0}/{1}'.format(
+            cache_paths.extend(list_cache_paths(prefix='{0}/{1}'.format(
                 prefix.strip('/'), node), cache_filter=cache_filter))
         else:
             cache_paths.append('{0}/{1}'.format(prefix.strip('/'), node))
@@ -216,6 +216,18 @@ def list_cached_leases(prefix=None, cache_filter=''):
     cache_paths = [path for path in cache_paths if cache_filter in path]
     return cache_paths
 
+
+def list_cached_data(prefix=None, cache_filter='', attribute_path=''):
+    client = __utils__['vault.build_client']()
+    cache_paths = list_cache_paths(prefix, cache_filter)
+    cached_data = []
+    for path in cache_paths:
+        cache_data = client.read(path)
+        if attribute_path:
+            cache_data = __utils__['data.traverse_dict'](cache_data,
+                                                         attribute_path)
+        cached_data.append((path, cache_data))
+    return cached_data
 
 def purge_cache_data(cache_filter):
     """Scan cached leases and delete any that match the given prefix
@@ -226,7 +238,7 @@ def purge_cache_data(cache_filter):
 
     """
     client = __utils__['vault.build_client']()
-    cached_leases = list_cached_leases(cache_filter=prefix)
+    cached_leases = list_cache_paths(cache_filter=prefix)
     for path in cached_leases:
         client.delete(path)
 
