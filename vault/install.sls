@@ -8,8 +8,8 @@ include:
 install_vault_binary:
   archive.extracted:
     - name: /usr/local/bin/
-    - source: https://releases.hashicorp.com/vault/{{ vault.version }}/vault_{{ vault.version }}_linux_{{ vault.architecture_dict[grains['osarch']] }}.zip
-    - source_hash: https://releases.hashicorp.com/vault/{{ vault.version }}/vault_{{ vault.version }}_SHA256SUMS
+    - source: {{ vault.repo_base_url }}/{{ vault.version }}/vault_{{ vault.version }}_linux_{{ vault.architecture_dict[grains['osarch']] }}.zip
+    - source_hash: {{ vault.repo_base_url }}/{{ vault.version }}/vault_{{ vault.version }}_SHA256SUMS
     - archive_format: zip
     - if_missing: /usr/local/bin/vault
     - source_hash_update: True
