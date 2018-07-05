@@ -238,7 +238,7 @@ def purge_cache_data(cache_filter):
 
     """
     client = __utils__['vault.build_client']()
-    cached_leases = list_cache_paths(cache_filter=prefix)
+    cached_leases = list_cache_paths(cache_filter=cache_filter)
     for path in cached_leases:
         client.delete(path)
 
