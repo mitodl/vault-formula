@@ -65,7 +65,6 @@ def render(data,
            saltenv='base',
            sls='',
            argline='',
-           cache_prefix='',
            **kwargs):
     # Traverse data structure to leaf nodes
     for leaf_node, location, container in __utils__[
@@ -73,10 +72,14 @@ def render(data,
                 data, leaf_filter):
         # Parse leaf nodes
         instructions, path = leaf_node.split(':', 2)[1:]
+        # Parse instructions into function name and kwargs
+        func_name, params = instructions.split('|')
+        for pair in params.split(','):
+            k, v = pair.split('=')
+            kwargs[k] = v
         # Replace values in matching leaf nodes
         parsed_path = path.split('>')
         vault_data = dispatch(instructions)(parsed_path[0],
-                                            cache_prefix=cache_prefix,
                                             **kwargs)
         container[location] = __utils__['data.traverse_dict'](
             vault_data, ':'.join(parsed_path[1:]))
