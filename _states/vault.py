@@ -490,7 +490,7 @@ def ec2_role_created(name, role, bound_ami_id=None, bound_iam_role_arn=None,
                      role_tag=None, ttl=None, max_ttl=None, policies=None,
                      allow_instance_migration=False,
                      disallow_reauthentication=False,
-                     period="", **kwargs):
+                     period="", update_role=False, **kwargs):
     """
     Ensure that the specified EC2 role exists so that it can be used for
     authenticating with the Vault EC2 backend.
@@ -540,7 +540,7 @@ def ec2_role_created(name, role, bound_ami_id=None, bound_iam_role_arn=None,
            'result': False,
            'changes': {}}
 
-    if current_role and current_params == role_params:
+    if current_role and not update_role:
         ret['result'] = True
         ret['comment'] = 'The {0} role already exists'.format(role)
     elif __opts__['test']:
