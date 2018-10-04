@@ -112,7 +112,7 @@ def auth_backend_enabled(name, backend_type, description='', mount_point=None):
             ret['result'] = True
             ret['changes']['new'] = __salt__[
                 'vault.list_auth_backends']()
-        except hvac.exceptions.VaultError as e:
+        except __utils__['vault.vault_error']() as e:
             ret['result'] = False
             log.exception(e)
         ret['comment'] = ('The {backend} has been successfully mounted at '
@@ -155,7 +155,7 @@ def audit_backend_enabled(name, backend_type, description='', options=None,
             ret['comment'] = ('The {backend} audit backend has been '
                               'successfully enabled.'.format(
                                   backend=backend_type))
-        except hvac.exceptions.VaultError as e:
+        except __utils__['vault.vault_error']() as e:
             ret['result'] = False
             log.exception(e)
     return ret
@@ -216,7 +216,7 @@ def secret_backend_enabled(name, backend_type, description='', mount_point=None,
             ret['result'] = True
             ret['changes']['new'] = __salt__[
                 'vault.list_secret_backends']()
-        except hvac.exceptions.VaultError as e:
+        except __utils__['vault.vault_error']() as e:
             ret['result'] = False
             log.exception(e)
         if connection_config:
@@ -226,7 +226,7 @@ def secret_backend_enabled(name, backend_type, description='', mount_point=None,
             try:
                 __salt__['vault.write'](connection_config_path,
                                         **connection_config)
-            except hvac.exceptions.VaultError as e:
+            except __utils__['vault.vault_error']() as e:
                 ret['comment'] += ('The backend was enabled but the connection '
                                   'could not be configured\n')
                 log.exception(e)
@@ -248,7 +248,7 @@ def secret_backend_enabled(name, backend_type, description='', mount_point=None,
                 __salt__['vault.write'](ttl_config_path,
                                         default_lease_ttl=ttl_default,
                                         max_lease_ttl=ttl_max)
-            except hvac.exceptions.VaultError as e:
+            except __utils__['vault.vault_error']() as e:
                 ret['comment'] += ('The backend was enabled but the connection '
                                   'ttl could not be tuned\n'.format(e))
                 log.exception(e)
@@ -270,7 +270,7 @@ def secret_backend_enabled(name, backend_type, description='', mount_point=None,
                 __salt__['vault.write'](lease_config_path,
                                         ttl=lease_default,
                                         max_ttl=lease_max)
-            except hvac.exceptions.VaultError as e:
+            except __utils__['vault.vault_error']() as e:
                 ret['comment'] += ('The backend was enabled but the lease '
                                   'length could not be configured\n'.format(e))
                 log.exception(e)
@@ -316,7 +316,7 @@ def app_id_created(name, app_id, policies, display_name=None,
                 'old': current_id,
                 'new': __salt__['vault.get_app_id'](app_id, mount_point)
             }
-        except hvac.exceptions.VaultError as e:
+        except __utils__['vault.vault_error']() as e:
             log.exception(e)
             ret['result'] = False
             ret['comment'] = ('Encountered an error while attempting to '
@@ -358,7 +358,7 @@ def policy_present(name, rules):
                               'created/updated.'.format(policy_name=name))
             ret['changes']['old'] = current_policy
             ret['changes']['new'] = rules
-        except hvac.exceptions.VaultError as e:
+        except __utils__['vault.vault_error']() as e:
             log.exception(e)
             ret['comment'] = ('The {policy_name} policy failed to be '
                               'created/updated'.format(policy_name=name))
@@ -397,7 +397,7 @@ def policy_absent(name):
                               'deleted.')
             ret['changes']['old'] = current_policy
             ret['changes']['new'] = {}
-        except hvac.exceptions.VaultError as e:
+        except __utils__['vault.vault_error']() as e:
             log.exception(e)
             ret['comment'] = ('The {policy_name} policy failed to be '
                               'created/updated'.format(policy_name=name))
@@ -445,7 +445,7 @@ def role_present(name, mount_point, options, override=False):
                               'created.'.format(role=name))
             ret['changes']['old'] = current_role
             ret['changes']['new'] = response
-        except hvac.exceptions.VaultError as e:
+        except __utils__['vault.vault_error']() as e:
             log.exception(e)
             ret['comment'] = ('The {role} role failed to be '
                               'created'.format(role=name))
@@ -480,7 +480,7 @@ def role_absent(name, mount_point):
         __salt__['vault.delete']('{mount}/roles/{name}'.format(
             mount=mount_point, name=name))
         ret['result'] = True
-    except hvac.exceptions.VaultError as e:
+    except __utils__['vault.vault_error']() as e:
         log.exception(e)
         raise salt.exceptions.SaltInvocationError(e)
     return ret
@@ -525,7 +525,7 @@ def ec2_role_created(name,
     """
     try:
         current_role = __salt__['vault.get_ec2_role'](role)
-    except (hvac.exceptions.InvalidRequest, hvac.exceptions.InvalidPath):
+    except __utils__['vault.vault_error']():
         current_role = None
 
     role_params = dict(
@@ -556,7 +556,7 @@ def ec2_role_created(name,
         ret['result'] = None
         if current_role:
             ret['comment'] = ('The {0} role will be updated with the given '
-                              'parameters'.format(role))
+                              'parameters').format(role)
             ret['changes']['old'] = current_params
             ret['changes']['new'] = role_params
         else:
@@ -570,7 +570,7 @@ def ec2_role_created(name,
             ret['comment'] = 'Successfully created the {0} role.'.format(role)
             ret['changes']['new'] = __salt__['vault.get_ec2_role'](role)
             ret['changes']['old'] = current_role or {}
-        except hvac.exceptions.VaultError as e:
+        except __utils__['vault.vault_error']() as e:
             log.exception(e)
             ret['result'] = False
             ret['comment'] = 'Failed to create the {0} role.'.format(role)
