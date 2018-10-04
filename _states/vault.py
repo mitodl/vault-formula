@@ -489,7 +489,8 @@ def ec2_role_created(name, role, bound_ami_id=None, bound_iam_role_arn=None,
                      bound_account_id=None, bound_iam_instance_profile_arn=None,
                      role_tag=None, ttl=None, max_ttl=None, policies=None,
                      allow_instance_migration=False,
-                     disallow_reauthentication=False):
+                     disallow_reauthentication=False,
+                     period="", **kwargs):
     """
     Ensure that the specified EC2 role exists so that it can be used for
     authenticating with the Vault EC2 backend.
@@ -517,34 +518,45 @@ def ec2_role_created(name, role, bound_ami_id=None, bound_iam_role_arn=None,
         current_role = __salt__['vault.get_ec2_role'](role)
     except (hvac.exceptions.InvalidRequest, hvac.exceptions.InvalidPath):
         current_role = None
+
+    role_params = dict(
+        role=role,
+        bound_ami_id=bound_ami_id,
+        role_tag=role_tag,
+        bound_iam_role_arn=bound_iam_role_arn,
+        bound_account_id=bound_account_id,
+        bound_iam_instance_profile_arn=bound_iam_instance_profile_arn,
+        ttl=ttl, max_ttl=max_ttl,
+        policies=','.join(policies),
+        allow_instance_migration=allow_instance_migration,
+        disallow_reauthentication=disallow_reauthentication,
+        **kwargs
+    )
+
+    current_params = (current_role or {}).get('data', {})
+
     ret = {'name': name,
            'comment': '',
            'result': False,
            'changes': {}}
-    if current_role and current_role.get('data', {}).get('policies') == (
-            policies or ['default']):
+
+    if current_role and current_params == role_params:
         ret['result'] = True
         ret['comment'] = 'The {0} role already exists'.format(role)
     elif __opts__['test']:
         ret['result'] = None
         if current_role:
             ret['comment'] = ('The {0} role will be updated with the given '
-                              'policies'.format(role))
-            ret['changes']['old'] = current_role
+                              'parameters'.format(role))
+            ret['changes']['old'] = current_params
+            ret['changes']['new'] = role_params
         else:
             ret['comment'] = ('The {0} role will be created')
     else:
         try:
             __salt__['vault.create_vault_ec2_client_configuration']()
-            __salt__['vault.create_ec2_role'](role, bound_ami_id,
-                                              role_tag=role_tag,
-                                              bound_iam_role_arn=bound_iam_role_arn,
-                                              bound_account_id=bound_account_id,
-                                              bound_iam_instance_profile_arn=bound_iam_instance_profile_arn,
-                                              ttl=ttl, max_ttl=max_ttl,
-                                              policies=','.join(policies),
-                                              allow_instance_migration=allow_instance_migration,
-                                              disallow_reauthentication=disallow_reauthentication)
+            __salt__['vault.create_ec2_role'](
+                **role_params)
             ret['result'] = True
             ret['comment'] = 'Successfully created the {0} role.'.format(role)
             ret['changes']['new'] = __salt__['vault.get_ec2_role'](role)

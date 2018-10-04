@@ -1092,6 +1092,7 @@ class VaultClient(object):
                         policies=None,
                         allow_instance_migration=False,
                         disallow_reauthentication=False,
+                        period="",
                         **kwargs):
         """
         POST /auth/aws-ec2/role/<role>
@@ -1099,7 +1100,8 @@ class VaultClient(object):
         params = {
             'role': role,
             'disallow_reauthentication': disallow_reauthentication,
-            'allow_instance_migration': allow_instance_migration
+            'allow_instance_migration': allow_instance_migration,
+            'period': period
         }
         if bound_ami_id is not None:
             params['bound_ami_id'] = bound_ami_id
