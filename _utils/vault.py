@@ -901,7 +901,7 @@ class VaultClient(object):
 
     def auth_ec2(self, pkcs7, nonce=None, role=None, use_token=True):
         """
-        POST /auth/aws-ec2/login
+        POST /auth/aws/login
         """
         params = {'pkcs7': pkcs7}
         if nonce:
@@ -910,7 +910,7 @@ class VaultClient(object):
             params['role'] = role
 
         return self.auth(
-            '/v1/auth/aws-ec2/login', json=params, use_token=use_token)
+            '/v1/auth/aws/login', json=params, use_token=use_token)
 
     def create_userpass(self,
                         username,
@@ -1032,7 +1032,7 @@ class VaultClient(object):
                                               secret_key=None,
                                               endpoint=None):
         """
-        POST /auth/aws-ec2/config/client
+        POST /auth/aws/config/client
         """
         params = {}
         if access_key:
@@ -1042,44 +1042,44 @@ class VaultClient(object):
         if endpoint is not None:
             params['endpoint'] = endpoint
 
-        return self._post('/v1/auth/aws-ec2/config/client', json=params)
+        return self._post('/v1/auth/aws/config/client', json=params)
 
     def get_vault_ec2_client_configuration(self):
         """
-        GET /auth/aws-ec2/config/client
+        GET /auth/aws/config/client
         """
-        return self._get('/v1/auth/aws-ec2/config/client').json()
+        return self._get('/v1/auth/aws/config/client').json()
 
     def delete_vault_ec2_client_configuration(self):
         """
-        DELETE /auth/aws-ec2/config/client
+        DELETE /auth/aws/config/client
         """
-        return self._delete('/v1/auth/aws-ec2/config/client')
+        return self._delete('/v1/auth/aws/config/client')
 
     def create_vault_ec2_certificate_configuration(self, cert_name,
                                                    aws_public_cert):
         """
-        POST /auth/aws-ec2/config/certificate/<cert_name>
+        POST /auth/aws/config/certificate/<cert_name>
         """
         params = {'cert_name': cert_name, 'aws_public_cert': aws_public_cert}
         return self._post(
-            '/v1/auth/aws-ec2/config/certificate/{0}'.format(cert_name),
+            '/v1/auth/aws/config/certificate/{0}'.format(cert_name),
             json=params)
 
     def get_vault_ec2_certificate_configuration(self, cert_name):
         """
-        GET /auth/aws-ec2/config/certificate/<cert_name>
+        GET /auth/aws/config/certificate/<cert_name>
         """
-        return self._get('/v1/auth/aws-ec2/config/certificate/{0}'.format(
+        return self._get('/v1/auth/aws/config/certificate/{0}'.format(
             cert_name)).json()
 
     def list_vault_ec2_certificate_configurations(self):
         """
-        GET /auth/aws-ec2/config/certificates?list=true
+        GET /auth/aws/config/certificates?list=true
         """
         params = {'list': True}
         return self._get(
-            '/v1/auth/aws-ec2/config/certificates', params=params).json()
+            '/v1/auth/aws/config/certificates', params=params).json()
 
     def create_ec2_role(self,
                         role,
@@ -1095,7 +1095,7 @@ class VaultClient(object):
                         period="",
                         **kwargs):
         """
-        POST /auth/aws-ec2/role/<role>
+        POST /auth/aws/role/<role>
         """
         params = {
             'role': role,
@@ -1120,27 +1120,27 @@ class VaultClient(object):
             params['policies'] = policies
         params.update(**kwargs)
         return self._post(
-            '/v1/auth/aws-ec2/role/{0}'.format(role), json=params)
+            '/v1/auth/aws/role/{0}'.format(role), json=params)
 
     def get_ec2_role(self, role):
         """
-        GET /auth/aws-ec2/role/<role>
+        GET /auth/aws/role/<role>
         """
-        return self._get('/v1/auth/aws-ec2/role/{0}'.format(role)).json()
+        return self._get('/v1/auth/aws/role/{0}'.format(role)).json()
 
     def delete_ec2_role(self, role):
         """
-        DELETE /auth/aws-ec2/role/<role>
+        DELETE /auth/aws/role/<role>
         """
-        return self._delete('/v1/auth/aws-ec2/role/{0}'.format(role))
+        return self._delete('/v1/auth/aws/role/{0}'.format(role))
 
     def list_ec2_roles(self):
         """
-        GET /auth/aws-ec2/roles?list=true
+        GET /auth/aws/roles?list=true
         """
         try:
             return self._get(
-                '/v1/auth/aws-ec2/roles', params={
+                '/v1/auth/aws/roles', params={
                     'list': True
                 }).json()
         except InvalidPath:
@@ -1154,7 +1154,7 @@ class VaultClient(object):
                             disallow_reauthentication=False,
                             allow_instance_migration=False):
         """
-        POST /auth/aws-ec2/role/<role>/tag
+        POST /auth/aws/role/<role>/tag
         """
         params = {
             'role': role,
@@ -1168,7 +1168,7 @@ class VaultClient(object):
         if instance_id is not None:
             params['instance_id'] = instance_id
         return self._post(
-            '/v1/auth/aws-ec2/role/{0}/tag'.format(role), json=params).json()
+            '/v1/auth/aws/role/{0}/tag'.format(role), json=params).json()
 
     def auth_ldap(self,
                   username,

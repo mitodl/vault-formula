@@ -485,12 +485,21 @@ def role_absent(name, mount_point):
         raise salt.exceptions.SaltInvocationError(e)
     return ret
 
-def ec2_role_created(name, role, bound_ami_id=None, bound_iam_role_arn=None,
-                     bound_account_id=None, bound_iam_instance_profile_arn=None,
-                     role_tag=None, ttl=None, max_ttl=None, policies=None,
+def ec2_role_created(name,
+                     role,
+                     bound_ami_id=None,
+                     bound_iam_role_arn=None,
+                     bound_account_id=None,
+                     bound_iam_instance_profile_arn=None,
+                     role_tag=None,
+                     ttl=None,
+                     max_ttl=None,
+                     policies=None,
                      allow_instance_migration=False,
                      disallow_reauthentication=False,
-                     period="", update_role=False, **kwargs):
+                     period="",
+                     update_role=False,
+                     **kwargs):
     """
     Ensure that the specified EC2 role exists so that it can be used for
     authenticating with the Vault EC2 backend.
