@@ -539,6 +539,7 @@ def ec2_role_created(name,
         policies=','.join(policies),
         allow_instance_migration=allow_instance_migration,
         disallow_reauthentication=disallow_reauthentication,
+        period=period,
         **kwargs
     )
 
@@ -565,7 +566,7 @@ def ec2_role_created(name,
         try:
             __salt__['vault.create_vault_ec2_client_configuration']()
             __salt__['vault.create_ec2_role'](
-                **role_params)
+                **{k: str(v) for k, v in role_params.items() if not v is None})
             ret['result'] = True
             ret['comment'] = 'Successfully created the {0} role.'.format(role)
             ret['changes']['new'] = __salt__['vault.get_ec2_role'](role)
