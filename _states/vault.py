@@ -637,10 +637,14 @@ def ec2_minion_authenticated(name, role, pkcs7=None, nonce=None,
             auth_result = __salt__['vault.auth_ec2'](pkcs7=pkcs7, role=role,
                                                      nonce=nonce)
             client_config = {
-                'vault.token': auth_result['auth']['client_token'],
-                'vault.nonce': auth_result['auth']['metadata'].get('nonce',
-                                                                   nonce)
+                'vault.{0}'.format(k): v for k, v in auth_result['auth'].items()
             }
+
+            client_config['vault.token'] = client_config.pop('client_token')
+
+            if nonce:
+                client_config['vault.nonce'] = nonce
+
             vault_conf_files = []
             if not client_conf_files:
                 vault_conf_files.append(os.path.join(
