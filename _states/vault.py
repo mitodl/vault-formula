@@ -636,6 +636,8 @@ def ec2_minion_authenticated(name, role, pkcs7=None, nonce=None,
                 nonce = __salt__['config.get']('vault.nonce')
             auth_result = __salt__['vault.auth_ec2'](pkcs7=pkcs7, role=role,
                                                      nonce=nonce)
+            log.debug('Auth response attributes: {}'.format(
+                auth_result['auth'].keys()))
             client_config = {
                 'vault.{0}'.format(k): v for k, v in auth_result['auth'].items()
             }
