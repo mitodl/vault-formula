@@ -642,7 +642,7 @@ def ec2_minion_authenticated(name, role, pkcs7=None, nonce=None,
                 'vault.{0}'.format(k): v for k, v in auth_result['auth'].items()
             }
 
-            client_config['vault.token'] = client_config.pop('client_token')
+            client_config['vault.token'] = client_config.pop('vault.client_token')
 
             if nonce:
                 client_config['vault.nonce'] = nonce
