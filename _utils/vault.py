@@ -290,6 +290,7 @@ class VaultClient(object):
         GET /<path>
         """
         try:
+            log.trace('Reading vault data from %s', path)
             return self._get('/v1/{0}'.format(path), wrap_ttl=wrap_ttl).json()
         except InvalidPath:
             return None
