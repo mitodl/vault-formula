@@ -304,7 +304,7 @@ class VaultClient(object):
         except InvalidPath:
             return None
 
-    def write(self, path, translate_newlines=False, wrap_ttl=None, **kwargs):
+    def update(self, path, translate_newlines=False, wrap_ttl=None, **kwargs):
         """
         PUT /<path>
         """
@@ -314,6 +314,21 @@ class VaultClient(object):
                     kwargs[k] = v.replace(r'\n', '\n')
 
         response = self._put(
+            '/v1/{0}'.format(path), json=kwargs, wrap_ttl=wrap_ttl)
+
+        if response.status_code == 200:
+            return response.json()
+
+    def write(self, path, translate_newlines=False, wrap_ttl=None, **kwargs):
+        """
+        POST /<path>
+        """
+        if translate_newlines:
+            for k, v in kwargs.items():
+                if isinstance(v, six.string_types):
+                    kwargs[k] = v.replace(r'\n', '\n')
+
+        response = self._post(
             '/v1/{0}'.format(path), json=kwargs, wrap_ttl=wrap_ttl)
 
         if response.status_code == 200:
