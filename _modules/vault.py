@@ -225,10 +225,10 @@ def cached_write(path, cache_prefix='', **kwargs):
                 'expired. It will be regenerated and cached with new data.'
                 .format(cache_path)
             })
-        vault_data = vault_client.read(path)
+        vault_data = vault_client.write(path, **kwargs)
         vault_data['created'] = datetime.utcnow().isoformat()
         vault_client.write(cache_path, value=vault_data)
-        vault_data = vault_client.write(cache_path)['data']['value']
+        vault_data = vault_client.read(cache_path)['data']['value']
 
     return vault_data
 
