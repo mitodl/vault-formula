@@ -157,9 +157,9 @@ def clean_expired_leases(prefix='', time_horizon=0):
     return expired_leases
 
 
-def cached_read(path, cache_prefix='', **kwargs):
+def check_cached_lease(path, cache_prefix='', **kwargs):
     cache_base_path = __opts__.get('vault.cache_base_path',
-                                   'secret/pillar_cache')
+                                       'secret/pillar_cache')
     cache_path = '/'.join((cache_base_path, cache_prefix, path))
     renewal_threshold = __opts__.get('vault.lease_renewal_threshold',
                                      {'days': 7})
@@ -177,9 +177,19 @@ def cached_read(path, cache_prefix='', **kwargs):
             lease_valid = True
         else:
             lease_valid = False
-            vault_client.delete(cache_path)
+            if not vault_data['renewable']:
+                vault_client.delete(cache_path)
+            else:
+                __salt__['event.send'](
+                    'vault/cache/renew/{0}'.format(cache_path),
+                    data={
+                        'message': 'The cached lease at {0} is renewable. It will be '
+                        'renewed and cached data will remain intact.'
+                        .format(cache_path)
+                    })
+                vault_client.renew_secret(vault_data['lease_id'])
 
-    if not vault_data or not lease_valid:
+    if not vault_data or not (lease_valid and not vault_data['renewable']):
         __salt__['event.send'](
             'vault/cache/miss/{0}'.format(cache_path),
             data={
@@ -187,6 +197,12 @@ def cached_read(path, cache_prefix='', **kwargs):
                 'expired. It will be regenerated and cached with new data.'
                 .format(cache_path)
             })
+    return cache_path, vault_client, vault_data
+
+
+def cached_read(path, cache_prefix='', **kwargs):
+    check_cached_lease(path, cache_prefix='', **kwargs)
+    if not vault_data:
         vault_data = vault_client.read(path)
         vault_data['created'] = datetime.utcnow().isoformat()
         vault_client.write(cache_path, value=vault_data)
@@ -196,35 +212,8 @@ def cached_read(path, cache_prefix='', **kwargs):
 
 
 def cached_write(path, cache_prefix='', **kwargs):
-    cache_base_path = __opts__.get('vault.cache_base_path',
-                                   'secret/pillar_cache')
-    cache_path = '/'.join((cache_base_path, cache_prefix, path))
-    renewal_threshold = __opts__.get('vault.lease_renewal_threshold',
-                                     {'days': 7})
-    vault_client = __utils__['vault.build_client']()
-
-    vault_data = vault_client.read(cache_path)
-
-    if vault_data:
-        log.debug('Loaded cached data for path %s', path)
-        vault_data = vault_data['data']['value']
-        lease = vault_client.get_lease(vault_data['lease_id'])
-
-        if (lease and timedelta(seconds=lease['data']['ttl']) >
-                timedelta(**renewal_threshold)):
-            lease_valid = True
-        else:
-            lease_valid = False
-            vault_client.delete(cache_path)
-
-    if not vault_data or not lease_valid:
-        __salt__['event.send'](
-            'vault/cache/miss/{0}'.format(cache_path),
-            data={
-                'message': 'The cached lease at {0} is either invalid or '
-                'expired. It will be regenerated and cached with new data.'
-                .format(cache_path)
-            })
+    cache_path, vault_client, vault_data = check_cached_lease(path, cache_prefix='', **kwargs)
+    if not vault_data:
         vault_data = vault_client.write(path, **kwargs)
         vault_data['created'] = datetime.utcnow().isoformat()
         vault_client.write(cache_path, value=vault_data)
