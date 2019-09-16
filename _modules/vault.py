@@ -157,7 +157,7 @@ def clean_expired_leases(prefix='', time_horizon=0):
     return expired_leases
 
 
-def check_cached_lease(path, cache_prefix='', **kwargs):
+def check_cached_lease(path, cache_prefix='', renew_lease=True, **kwargs):
     """Check whether cached leases have expired and if they are renewable.
 
     :param path: path to the full vault cache path
@@ -185,7 +185,7 @@ def check_cached_lease(path, cache_prefix='', **kwargs):
             lease_valid = True
         else:
             lease_valid = False
-            if not vault_data['renewable']:
+            if not vault_data['renewable'] or not renew_lease:
                 vault_client.delete(cache_path)
             else:
                 __salt__['event.send'](
@@ -218,6 +218,7 @@ def cached_read(path, cache_prefix='', **kwargs):
     """
     cache_path, vault_client, vault_data = check_cached_lease(path,
                                                               cache_prefix='',
+                                                              renew_lease=True,
                                                               **kwargs)
     if not vault_data:
         vault_data = vault_client.read(path)
@@ -240,6 +241,7 @@ def cached_write(path, cache_prefix='', **kwargs):
     """
     cache_path, vault_client, vault_data = check_cached_lease(path,
                                                               cache_prefix='',
+                                                              renew_lease=True,
                                                               **kwargs)
     if not vault_data:
         vault_data = vault_client.write(path, **kwargs)
