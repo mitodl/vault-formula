@@ -157,7 +157,15 @@ def clean_expired_leases(prefix='', time_horizon=0):
     return expired_leases
 
 
-def cached_read(path, cache_prefix='', **kwargs):
+def check_cached_lease(path, cache_prefix='', renew_lease=True, **kwargs):
+    """Check whether cached leases have expired and if they are renewable.
+
+    :param path: path to the full vault cache path
+    :param cache_prefix: usually the minion_id
+    :param **kwargs: other data that the function might require
+    :rtype: list, dict
+
+    """
     cache_base_path = __opts__.get('vault.cache_base_path',
                                    'secret/pillar_cache')
     cache_path = '/'.join((cache_base_path, cache_prefix, path))
@@ -177,17 +185,66 @@ def cached_read(path, cache_prefix='', **kwargs):
             lease_valid = True
         else:
             lease_valid = False
-            vault_client.delete(cache_path)
+            if not vault_data['renewable'] or not renew_lease:
+                vault_client.delete(cache_path)
+            else:
+                __salt__['event.send'](
+                    'vault/cache/renew/{0}'.format(cache_path),
+                    data={'message': 'The cached lease at {0} is renewable. '
+                                     'It will be renewed and cached data '
+                                     'will remain intact.'
+                                     .format(cache_path)})
+                vault_client.renew_secret(vault_data['lease_id'])
 
-    if not vault_data or not lease_valid:
+    if not vault_data or not (lease_valid and not vault_data['renewable']):
         __salt__['event.send'](
             'vault/cache/miss/{0}'.format(cache_path),
-            data={
-                'message': 'The cached lease at {0} is either invalid or '
-                'expired. It will be regenerated and cached with new data.'
-                .format(cache_path)
-            })
+            data={'message': 'The cached lease at {0} is either invalid or '
+                             'expired and not renewable. It will be '
+                             'regenerated and cached with new data.'
+                             .format(cache_path)})
+    return cache_path, vault_client, vault_data
+
+
+def cached_read(path, cache_prefix='', **kwargs):
+    """Generate new secret through vault read function and copy it to the vault
+    cache path.
+
+    :param path: path to the full vault cache path
+    :param cache_prefix: usually the minion_id
+    :param **kwargs: other data that the function might require
+    :rtype: list, dict
+
+    """
+    cache_path, vault_client, vault_data = check_cached_lease(path,
+                                                              cache_prefix='',
+                                                              renew_lease=True,
+                                                              **kwargs)
+    if not vault_data:
         vault_data = vault_client.read(path)
+        vault_data['created'] = datetime.utcnow().isoformat()
+        vault_client.write(cache_path, value=vault_data)
+        vault_data = vault_client.read(cache_path)['data']['value']
+
+    return vault_data
+
+
+def cached_write(path, cache_prefix='', **kwargs):
+    """Generate new secret through vault write function and copy it to the vault
+    cache path.
+
+    :param path: path to the full vault cache path
+    :param cache_prefix: usually the minion_id
+    :param **kwargs: other data that the function might require
+    :rtype: list, dict
+
+    """
+    cache_path, vault_client, vault_data = check_cached_lease(path,
+                                                              cache_prefix='',
+                                                              renew_lease=True,
+                                                              **kwargs)
+    if not vault_data:
+        vault_data = vault_client.write(path, **kwargs)
         vault_data['created'] = datetime.utcnow().isoformat()
         vault_client.write(cache_path, value=vault_data)
         vault_data = vault_client.read(cache_path)['data']['value']
@@ -198,8 +255,8 @@ def cached_read(path, cache_prefix='', **kwargs):
 def list_cache_paths(prefix=None, cache_filter=''):
     client = __utils__['vault.build_client']()
     if not prefix:
-       prefix = __opts__.get('vault.cache_base_path',
-                             'secret/pillar_cache')
+        prefix = __opts__.get('vault.cache_base_path',
+                              'secret/pillar_cache')
 
     caches = client.list(
         prefix
@@ -228,6 +285,7 @@ def list_cached_data(prefix=None, cache_filter='', attribute_path=''):
                                                          attribute_path)
         cached_data.append((path, cache_data))
     return cached_data
+
 
 def purge_cache_data(cache_filter):
     """Scan cached leases and delete any that match the given prefix
