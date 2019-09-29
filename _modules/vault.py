@@ -187,14 +187,6 @@ def check_cached_lease(path, cache_prefix='', **kwargs):
             lease_valid = False
             if not vault_data['renewable']:
                 vault_client.delete(cache_path)
-            else:
-                __salt__['event.send'](
-                    'vault/cache/renew/{0}'.format(cache_path),
-                    data={'message': 'The cached lease at {0} is renewable. '
-                                     'It will be renewed and cached data '
-                                     'will remain intact.'
-                                     .format(cache_path)})
-                vault_client.renew_secret(vault_data['lease_id'])
 
     if not vault_data or not lease_valid:
         __salt__['event.send'](
