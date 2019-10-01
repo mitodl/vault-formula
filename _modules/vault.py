@@ -184,8 +184,10 @@ def check_cached_lease(path, cache_prefix='', **kwargs):
                 timedelta(**renewal_threshold)):
             lease_valid = True
         else:
-            lease_valid = False
-            if not vault_data['renewable']:
+            if vault_data['renewable']:
+                vault_client.renew_secret(lease['id'])
+            else:
+                lease_valid = False
                 vault_client.delete(cache_path)
 
     if not vault_data or not lease_valid:
