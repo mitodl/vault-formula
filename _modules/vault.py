@@ -157,7 +157,7 @@ def clean_expired_leases(prefix='', time_horizon=0):
     return expired_leases
 
 
-def check_cached_lease(path, cache_prefix='', **kwargs):
+def check_cached_lease(path, cache_prefix='', renew_lease=True, **kwargs):
     """Check whether cached leases have expired and if they are renewable.
 
     :param path: path to the full vault cache path
@@ -166,6 +166,7 @@ def check_cached_lease(path, cache_prefix='', **kwargs):
     :rtype: list, dict
 
     """
+    lease_valid = None
     cache_base_path = __opts__.get('vault.cache_base_path',
                                    'secret/pillar_cache')
     cache_path = '/'.join((cache_base_path, cache_prefix, path))
@@ -176,19 +177,22 @@ def check_cached_lease(path, cache_prefix='', **kwargs):
     vault_data = vault_client.read(cache_path)
 
     if vault_data:
-        log.debug('Loaded cached data for path %s', path)
         vault_data = vault_data['data']['value']
         lease = vault_client.get_lease(vault_data['lease_id'])
 
         if (lease and timedelta(seconds=lease['data']['ttl']) >
                 timedelta(**renewal_threshold)):
             lease_valid = True
-        else:
+        # Lease might sitll be in cache even though it has expired.
+        # This verifies that the lease is still valid and can be renewed.
+        elif lease and vault_data['lease_duration'] > 0:
             if vault_data['renewable']:
-                vault_client.renew_secret(lease['id'])
-            else:
-                lease_valid = False
-                vault_client.delete(cache_path)
+                log.info('Renewing lease')
+                # Setting increment to zero will renew the lease to its specified ttl
+                vault_client.renew_secret(lease['data']['id'], increment=0)
+        else:
+            lease_valid = False
+            vault_data = vault_client.delete(cache_path)
 
     if not vault_data or not lease_valid:
         __salt__['event.send'](
@@ -200,7 +204,7 @@ def check_cached_lease(path, cache_prefix='', **kwargs):
     return cache_path, vault_client, vault_data
 
 
-def cached_read(path, cache_prefix='', **kwargs):
+def cached_read(path, cache_prefix='', renew_lease=True, **kwargs):
     """Generate new secret through vault read function and copy it to the vault
     cache path.
 
@@ -212,8 +216,9 @@ def cached_read(path, cache_prefix='', **kwargs):
     """
     cache_path, vault_client, vault_data = check_cached_lease(path,
                                                               cache_prefix='',
+                                                              renew_lease=True,
                                                               **kwargs)
-    if not vault_data:
+    if not vault_data or not renew_lease:
         vault_data = vault_client.read(path)
         vault_data['created'] = datetime.utcnow().isoformat()
         vault_client.write(cache_path, value=vault_data)
@@ -222,7 +227,7 @@ def cached_read(path, cache_prefix='', **kwargs):
     return vault_data
 
 
-def cached_write(path, cache_prefix='', **kwargs):
+def cached_write(path, cache_prefix='', renew_lease=True, **kwargs):
     """Generate new secret through vault write function and copy it to the vault
     cache path.
 
@@ -234,8 +239,9 @@ def cached_write(path, cache_prefix='', **kwargs):
     """
     cache_path, vault_client, vault_data = check_cached_lease(path,
                                                               cache_prefix='',
+                                                              renew_lease=True,
                                                               **kwargs)
-    if not vault_data:
+    if not vault_data or not renew_lease:
         vault_data = vault_client.write(path, **kwargs)
         vault_data['created'] = datetime.utcnow().isoformat()
         vault_client.write(cache_path, value=vault_data)

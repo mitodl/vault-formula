@@ -501,7 +501,7 @@ class VaultClient(object):
         try:
             lease = self.write('sys/leases/lookup', lease_id=lease_id)
         except InvalidRequest:
-            log.exception('The specified lease is not valid')
+            log.warning('The following lease_id is not valid: %s', lease_id)
             lease = None
 
         return lease
