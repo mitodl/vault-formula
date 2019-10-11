@@ -171,7 +171,7 @@ def check_cached_lease(path, cache_prefix='', renew_lease=True, **kwargs):
                                    'secret/pillar_cache')
     cache_path = '/'.join((cache_base_path, cache_prefix, path))
     renewal_threshold = __opts__.get('vault.lease_renewal_threshold',
-                                     {'days': 7})
+                                    {'days': 7})
     vault_client = __utils__['vault.build_client']()
 
     vault_data = vault_client.read(cache_path)
@@ -185,14 +185,14 @@ def check_cached_lease(path, cache_prefix='', renew_lease=True, **kwargs):
             lease_valid = True
         # Lease might sitll be in cache even though it has expired.
         # This verifies that the lease is still valid and can be renewed.
-        elif lease and vault_data['lease_duration'] > 0:
-            if vault_data['renewable']:
-                log.info('Renewing lease')
-                # Setting increment to zero will renew the lease to its specified ttl
-                vault_client.renew_secret(lease['data']['id'], increment=0)
+        elif lease and lease['data']['renewable']:
+            log.info('Renewing lease')
+            # Setting increment to zero will renew the lease to its specified ttl
+            vault_client.renew_secret(lease['data']['id'], increment=0)
         else:
             lease_valid = False
-            vault_data = vault_client.delete(cache_path)
+            vault_client.delete(cache_path)
+            vault_data = None
 
     if not vault_data or not lease_valid:
         __salt__['event.send'](
