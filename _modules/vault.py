@@ -166,17 +166,17 @@ def check_cached_lease(path, cache_prefix='', **kwargs):
     :rtype: list, dict
 
     """
+    lease_valid = None
     cache_base_path = __opts__.get('vault.cache_base_path',
                                    'secret/pillar_cache')
     cache_path = '/'.join((cache_base_path, cache_prefix, path))
     renewal_threshold = __opts__.get('vault.lease_renewal_threshold',
-                                     {'days': 7})
+                                    {'days': 7})
     vault_client = __utils__['vault.build_client']()
 
     vault_data = vault_client.read(cache_path)
 
     if vault_data:
-        log.debug('Loaded cached data for path %s', path)
         vault_data = vault_data['data']['value']
         lease = vault_client.get_lease(vault_data['lease_id'])
 
@@ -184,11 +184,9 @@ def check_cached_lease(path, cache_prefix='', **kwargs):
                 timedelta(**renewal_threshold)):
             lease_valid = True
         else:
-            if vault_data['renewable']:
-                vault_client.renew_secret(lease['id'])
-            else:
-                lease_valid = False
-                vault_client.delete(cache_path)
+            lease_valid = False
+            vault_client.delete(cache_path)
+            vault_data = None
 
     if not vault_data or not lease_valid:
         __salt__['event.send'](
