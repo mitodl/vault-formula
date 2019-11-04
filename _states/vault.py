@@ -600,11 +600,11 @@ def ec2_minion_authenticated(name, role, pkcs7=None, nonce=None,
     # Make sure that the target role exists before trying to use it to auth
     try:
         __salt__['vault.get_ec2_role'](role)
-    except hvac.exceptions.Forbidden as e:
+    except __utils__['vault.vault_error']('Forbidden') as e:
         log.info('The configured token is no longer valid. Attempting to '
                  're-authenticate')
-    except (hvac.exceptions.InvalidRequest, hvac.exceptions.InvalidPath):
-        log.error('Specified EC2 role has not been created.')
+    except (__utils__['vault.vault_error']('InvalidRequest'), __utils__['vault.vault_error']('InvalidPath')):
+        log.exception('Specified EC2 role has not been created.')
         raise
     ret = {
         'name': name,
@@ -614,7 +614,7 @@ def ec2_minion_authenticated(name, role, pkcs7=None, nonce=None,
     }
     try:
         is_authenticated = __salt__['vault.is_authenticated']()
-    except (hvac.exceptions.InvalidRequest, hvac.exceptions.InvalidPath) as e:
+    except (__utils__['vault.vault_error']('InvalidRequest'), __utils__['vault.vault_error']('InvalidPath')) as e:
         log.exception(e)
         raise
     if not is_authenticated:
@@ -672,7 +672,7 @@ def ec2_minion_authenticated(name, role, pkcs7=None, nonce=None,
             ret['changes']['old'] = {}
             ret['comment'] = 'Successfully authenticated using EC2 backend'
             ret['result'] = True
-        except (hvac.exceptions.InvalidRequest, hvac.exceptions.InvalidPath) as e:
+        except (__utils__['vault.vault_error']('InvalidRequest'), __utils__['vault.vault_error']('InvalidPath')) as e:
             log.exception(e)
             ret['result'] = False
             ret['comment'] = 'Failed to authenticate'

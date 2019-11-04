@@ -1773,8 +1773,22 @@ def vault_client():
     return VaultClient
 
 
-def vault_error():
-    return VaultError
+def vault_error(error_type=None):
+    if error_type is None:
+        return VaultError
+    else:
+        error_dict = {
+            'InvalidRequest': InvalidRequest,
+            'Unauthorized': Unauthorized,
+            'Forbidden': Forbidden,
+            'InvalidPath': InvalidPath,
+            'RateLimitExceeded': RateLimitExceeded,
+            'InternalServerError': InternalServerError,
+            'VaultNotInitialized': VaultNotInitialized,
+            'VaultDown': VaultDown,
+            'UnexpectedError': UnexpectedError
+        }
+        return error_dict[error_type]
 
 
 def bind_client(unbound_function):
