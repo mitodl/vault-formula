@@ -11,10 +11,10 @@ import salt.exceptions
 log = logging.getLogger(__name__)
 
 try:
-    import hvac
+    import requests
     DEPS_INSTALLED = True
 except ImportError:
-    log.debug('Unable to import the HVAC library.')
+    log.debug('Unable to import the requests library.')
     DEPS_INSTALLED = False
 
 __all__ = ['initialize']
