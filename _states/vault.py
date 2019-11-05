@@ -598,14 +598,14 @@ def ec2_minion_authenticated(name, role, pkcs7=None, nonce=None,
 
     """
     # Make sure that the target role exists before trying to use it to auth
-    try:
-        __salt__['vault.get_ec2_role'](role)
-    except __utils__['vault.vault_error']('Forbidden') as e:
-        log.info('The configured token is no longer valid. Attempting to '
-                 're-authenticate')
-    except (__utils__['vault.vault_error']('InvalidRequest'), __utils__['vault.vault_error']('InvalidPath')):
-        log.exception('Specified EC2 role has not been created.')
-        raise
+    # try:
+    #     __salt__['vault.get_ec2_role'](role)
+    # except __utils__['vault.vault_error']('Forbidden') as e:
+    #     log.info('The configured token is no longer valid. Attempting to '
+    #              're-authenticate')
+    # except (__utils__['vault.vault_error']('InvalidRequest'), __utils__['vault.vault_error']('InvalidPath')):
+    #     log.exception('Specified EC2 role has not been created.')
+    #     raise
     ret = {
         'name': name,
         'comment': '',
