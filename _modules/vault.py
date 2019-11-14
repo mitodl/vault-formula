@@ -209,7 +209,7 @@ def cached_read(path, cache_prefix='', **kwargs):
 
     """
     cache_path, vault_client, vault_data = check_cached_lease(path,
-                                                              cache_prefix='',
+                                                              cache_prefix=cache_prefix,
                                                               **kwargs)
     if not vault_data:
         vault_data = vault_client.read(path)
@@ -231,7 +231,7 @@ def cached_write(path, cache_prefix='', **kwargs):
 
     """
     cache_path, vault_client, vault_data = check_cached_lease(path,
-                                                              cache_prefix='',
+                                                              cache_prefix=cache_prefix,
                                                               **kwargs)
     if not vault_data:
         vault_data = vault_client.write(path, **kwargs)
