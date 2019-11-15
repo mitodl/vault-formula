@@ -85,7 +85,6 @@ install_tls_module_dependency:
     - reload_modules: True
     - require:
         - pkg: install_package_dependencies
-        - cmd: install_pip_executable
 
 setup_vault_ssl_cert:
   module.run:
