@@ -213,6 +213,8 @@ def cached_read(path, cache_prefix='', **kwargs):
                                                               **kwargs)
     if not vault_data:
         vault_data = vault_client.read(path)
+        if vault_data is None:
+            log.info("Failed to load Vault data from path: %s", path)
         vault_data['created'] = datetime.utcnow().isoformat()
         vault_client.write(cache_path, value=vault_data)
         vault_data = vault_client.read(cache_path)['data']['value']

@@ -4,12 +4,14 @@ Documentation=http://vaultproject.io
 
 [Service]
 Type=forking
-ExecStart=/usr/local/bin/vaultserver start
-ExecStop=/usr/local/bin/vaultserver stop
-ExecReload=/usr/local/bin/vaultserver reload
+ExecStart=/usr/local/bin/vault server -config /etc/vault 2>&1 &
+ExecReload=/bin/kill -HUP $MAINPID
+KillSignal=SIGTERM
 Restart=always
 PIDFile=/var/run/vault.pid
 TimeoutStartSec=1
+User={{ vault.user }}
+Group={{ vault.group }}
 
 [Install]
 WantedBy=multi-user.target
