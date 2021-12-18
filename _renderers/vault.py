@@ -75,6 +75,7 @@ def render(data,
         instructions, path = leaf_node.split(':', 2)[1:]
         # Replace values in matching leaf nodes
         parsed_path = path.split('>')
+        log.debug("Trying to load data from Vault at path %s", parsed_path[0])
         vault_data = dispatch(instructions)(parsed_path[0],
                                             cache_prefix=cache_prefix,
                                             **kwargs)
